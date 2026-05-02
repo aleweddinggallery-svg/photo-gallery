@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Subida de Fotos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Quicksand';
+      font-size: 18px;
+    }
+
+    .iframe-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .iframe-container iframe {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      border: none;
+    }
+
+    .form-overlay {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .btn {
+      background-color: #4d3c31;
+      border-color: #4d3c31;
+      color: white;
+    }
+
+    .btn:hover {
+      color: #a9a9a9;
+    }
+
+    #message {
+      margin-bottom: 10px;
+      margin-top: 10px;
+    }
+
+    #loading {
+      display: none;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="iframe-container">
+    <iframe loading="lazy" src="https://www.canva.com/design/DAHIg_LmVWE/CEbhpDloHlESHWMA1K3dLg/view?embed"
+      allowfullscreen="allowfullscreen" allow="fullscreen">
+    </iframe>
+
+    <div class="form-overlay">
+      <!-- Botón para seleccionar y subir -->
+      <button type="button" class="btn" id="uploadButton" onclick="triggerFileSelection()">Seleccionar y Subir</button>
+
+      <!-- Input para seleccionar archivos -->
+      <input type="file" id="photos" name="photos" multiple hidden>
+
+      <!-- Mostrar nombres de archivos seleccionados -->
+      <span id="fileNames" style="display: block; margin-top: 10px;">Ningún archivo seleccionado</span>
+
+      <!-- Mensaje de estado -->
+      <div id="message"></div>
+
+      <!-- Indicador de carga -->
+      <!-- Reemplaza el div #loading por esto -->
+      <div id="loading" style="display:none; margin-top:10px;">
+        <div style="background:#ddd; border-radius:8px; overflow:hidden; height:12px; width:100%;">
+          <div id="progressBar" style="height:100%; width:0%; background:#4d3c31; transition:width 0.3s;"></div>
+        </div>
+        <span id="progressText" style="font-size:14px;">Subiendo...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function triggerFileSelection() {
+      const fileInput = document.getElementById('photos');
+      const messageDiv = document.getElementById('message');
+      const fileNamesSpan = document.getElementById('fileNames');
+      const loadingDiv = document.getElementById('loading');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+
+      messageDiv.innerText = '';
+      fileNamesSpan.innerText = 'Ningún archivo seleccionado';
+      fileInput.click();
+
+      fileInput.onchange = async () => {
+        const files = fileInput.files;
+        if (!files.length) return;
+
+        if (files.length > 10) {
+          messageDiv.innerText = 'Error: Solo puedes seleccionar hasta 10 archivos.';
+          messageDiv.style.color = 'red';
+          return;
+        }
+
+        loadingDiv.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.innerText = 'Subiendo...';
+
+        const formData = new FormData();
+        Array.from(files).forEach(file => formData.append('photos', file));
+
+        // Usar XHR para tener barra de progreso real
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = pct + '%';
+            progressText.innerText = `Subiendo... ${pct}%`;
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          loadingDiv.style.display = 'none';
+          if (xhr.status === 200) {
+            messageDiv.style.color = 'green';
+            messageDiv.innerText = '¡Fotos subidas exitosamente!';
+          } else {
+            messageDiv.style.color = 'red';
+            messageDiv.innerText = 'Error al subir. Inténtalo de nuevo.';
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          loadingDiv.style.display = 'none';
+          messageDiv.style.color = 'red';
+          messageDiv.innerText = 'Error de red al subir los archivos.';
+        });
+
+        xhr.open('POST', '/upload');
+        xhr.send(formData);
+      };
+    }
+  </script>
+</body>
+
+</html>
